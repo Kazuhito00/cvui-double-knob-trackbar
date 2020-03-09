@@ -3,6 +3,9 @@ cvui-double-knob-trackbarはcvuiをベースとして、上限下限の2つの�
 
 cvui-double-knob-trackbar is a trial implementation of a trackbar based on cvui that allows you to specify two values, upper and lower limits.
 
+![jbl0m-01yhb](https://user-images.githubusercontent.com/37477845/76235541-94c3b580-626e-11ea-803b-aa9e82aea324.gif)
+
+
 # Requirement
  
 * OpenCV 3.4.2(or later)
