@@ -31,18 +31,21 @@ python sample.py
 # Author
 高橋かずひと(https://twitter.com/KzhtTkhs)
 
-License
------
+# License
+
 cvui-double-knob-trackbar is under [MIT license](LICENSE.md).
 
-cvui License
------
+# cvui License
+
 The original part of cvui is distributed under the MIT license.
 
 I pay tribute to his wonderful work.
 
 Copyright (c) 2016 Fernando Bevilacqua. Licensed under the [MIT license](LICENSE.md).
 
-Change log
------
+# Change log
+
 See all changes in the [CHANGELOG](CHANGELOG.md) file.
+
+# Reference
+https://github.com/Dovyski/cvui
