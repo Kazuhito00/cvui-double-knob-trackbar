@@ -10,6 +10,14 @@ cvui-double-knob-trackbar is a trial implementation of a trackbar based on cvui 
  
 * OpenCV 3.4.2(or later)
 
+# How to use
+```python
+trackbar_value1 = [25.0]
+trackbar_value2 = [75.0]
+
+cvui.trackbar2(cvuiframe, 30, 30, 400, trackbar_value1, trackbar_value2, 0., 100.)
+```
+
 # Usage
  
 サンプルの実行方法は以下です。
