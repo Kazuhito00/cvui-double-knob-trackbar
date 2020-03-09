@@ -43,9 +43,5 @@ I pay tribute to his wonderful work.
 
 Copyright (c) 2016 Fernando Bevilacqua. Licensed under the [MIT license](LICENSE.md).
 
-# Change log
-
-See all changes in the [CHANGELOG](CHANGELOG.md) file.
-
 # Reference
 https://github.com/Dovyski/cvui
