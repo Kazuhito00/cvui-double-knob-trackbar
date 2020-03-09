@@ -1,6 +1,6 @@
 """
 A (very) simple UI lib built on top of OpenCV drawing primitives.
-Version: 2.7
+Version: 2.7 + double knob trackbar
 
 Use of cvui revolves around calling cvui.init() to initialize the lib,
 rendering cvui components to a np.ndarray (that you handle yourself) and
@@ -603,6 +603,31 @@ class Internal:
 
 		return theValue[0] != aValue
 
+	def trackbar2(self, theBlock, theX, theY, theWidth, theValue1, theValue2, theParams):
+		aMouse = self.getContext().mouse
+		aContentArea = Rect(theX, theY, theWidth, 45)
+		aMouseIsOver = aContentArea.contains(aMouse.position)
+		aValue1 = theValue1[0]
+
+		self._render.trackbar2(theBlock, OVER if aMouseIsOver else OUT, aContentArea, theValue1[0], theValue2[0], theParams)
+
+		if aMouse.anyButton.pressed and aMouseIsOver:
+			temp_value = self.trackbarXPixelToValue(theParams, aContentArea, aMouse.position.x)
+			if abs(temp_value - theValue1[0]) < abs(temp_value - theValue2[0]):
+				theValue1[0] = temp_value
+				if self.bitsetHas(theParams.options, TRACKBAR_DISCRETE):
+					self.trackbarForceValuesAsMultiplesOfSmallStep(theParams, theValue1)
+			else:
+				theValue2[0] = temp_value
+				if self.bitsetHas(theParams.options, TRACKBAR_DISCRETE):
+					self.trackbarForceValuesAsMultiplesOfSmallStep(theParams, theValue2)
+
+		# Update the layout flow
+		# TODO: use aSize = aContentArea.size()?
+		self.updateLayoutFlow(theBlock, aContentArea)
+
+		return theValue1[0] != aValue1
+
 	def window(self, theBlock, theX, theY, theWidth, theHeight, theTitle):
 		aTitleBar = Rect(theX, theY, theWidth, 20)
 		aContent = Rect(theX, theY + aTitleBar.height, theWidth, theHeight - aTitleBar.height)
@@ -910,6 +935,23 @@ class Render:
 			self.trackbarSegments(theBlock, theState, theShape, theValue, theParams, aWorkingArea)
 
 		self.trackbarHandle(theBlock, theState, theShape, theValue, theParams, aWorkingArea)
+
+	def trackbar2(self, theBlock, theState, theShape, theValue1, theValue2, theParams):
+		aWorkingArea = Rect(theShape.x + self._internal.trackbarMarginX, theShape.y, theShape.width - 2 * self._internal.trackbarMarginX, theShape.height)
+
+		self.trackbarPath(theBlock, theState, theShape, theValue1, theParams, aWorkingArea)
+
+		aHideAllLabels = self._internal.bitsetHas(theParams.options, TRACKBAR_HIDE_LABELS)
+		aShowSteps = self._internal.bitsetHas(theParams.options, TRACKBAR_HIDE_STEP_SCALE) == False
+
+		if aShowSteps and aHideAllLabels == False:
+			self.trackbarSteps(theBlock, theState, theShape, theValue1, theParams, aWorkingArea)
+
+		if aHideAllLabels == False:
+			self.trackbarSegments(theBlock, theState, theShape, theValue1, theParams, aWorkingArea)
+
+		self.trackbarHandle(theBlock, theState, theShape, theValue1, theParams, aWorkingArea)
+		self.trackbarHandle(theBlock, theState, theShape, theValue2, theParams, aWorkingArea)
 
 	def checkbox(self, theBlock, theState, theShape):
 		# Outline
@@ -1632,6 +1674,63 @@ def trackbar(theWhere, theX, theY, theWidth, theValue, theMin, theMax, theSegmen
 	"""
 	print('This is wrapper function to help code autocompletion.')
 
+def trackbar2(theWhere, theX, theY, theWidth, theValue1, theValue2, theMin, theMax, theSegments=1, theLabelFormat='%.1Lf', theOptions=0, theDiscreteStep=1):
+	"""
+	Display a trackbar for numeric values that the user can increase/decrease
+	by clicking and/or dragging the marker right or left. This component can use
+	different types of data as its value, so it is imperative provide the right
+	label format, e.g. '%d' for ints, otherwise you might end up with weird errors.
+
+	Example:
+
+	```
+	# using float
+	trackbar2(where, x, y, width, &floatValue1, &floatValue2, 0.0, 50.0)
+
+	# using float
+	trackbar2(where, x, y, width, &floatValue1, &floatValue2, 0.0f, 50.0f)
+
+	# using char
+	trackbar2(where, x, y, width, &charValue1, &charValue2, (char)1, (char)10)
+	```
+
+	Parameters
+	----------
+	theWhere: np.ndarray
+		image/frame where the component should be rendered.
+	theX: int
+		position X where the component should be placed.
+	theY: int
+		position Y where the component should be placed.
+	theWidth: int
+		width of the trackbar.
+	theValue1: [number]
+		array or list of numbers whose first position, i.e. theValue[0], will be used to store the current value of the trackbar. It will be modified when the user interacts with the trackbar. Any numeric type can be used, e.g. int, float, long double, etc.
+	theValue2: [number]
+		array or list of numbers whose first position, i.e. theValue[0], will be used to store the current value of the trackbar. It will be modified when the user interacts with the trackbar. Any numeric type can be used, e.g. int, float, long double, etc.
+	theMin: number
+		minimum value allowed for the trackbar.
+	theMax: number
+		maximum value allowed for the trackbar.
+	theSegments: int
+		number of segments the trackbar will have (default is 1). Segments can be seen as groups of numbers in the scale of the trackbar. For example, 1 segment means a single groups of values (no extra labels along the scale), 2 segments mean the trackbar values will be divided in two groups and a label will be placed at the middle of the scale.
+	theLabelFormat: str
+		formating string that will be used to render the labels. If you are using a trackbar with integers values, for instance, you can use `%d` to render labels.
+	theOptions: uint
+		options to customize the behavior/appearance of the trackbar, expressed as a bitset. Available options are defined as `cvui.TRACKBAR_` constants and they can be combined using the bitwise `|` operand. Available options are: `TRACKBAR_HIDE_SEGMENT_LABELS` (do not render segment labels, but do render min/max labels), `TRACKBAR_HIDE_STEP_SCALE` (do not render the small lines indicating values in the scale), `TRACKBAR_DISCRETE` (changes of the trackbar value are multiples of theDiscreteStep param), `TRACKBAR_HIDE_MIN_MAX_LABELS` (do not render min/max labels), `TRACKBAR_HIDE_VALUE_LABEL` (do not render the current value of the trackbar below the moving marker), `TRACKBAR_HIDE_LABELS` (do not render labels at all).
+	theDiscreteStep: number
+		amount that the trackbar marker will increase/decrease when the marker is dragged right/left (if option TRACKBAR_DISCRETE is ON)
+
+	Returns
+	----------
+	`true` when the value of the trackbar changed.
+
+	See Also
+	----------
+	counter()
+	"""
+	print('This is wrapper function to help code autocompletion.')
+
 def window(theWhere, theX, theY, theWidth, theHeight, theTitle):
 	"""
 	Display a window (a block with a title and a body).
@@ -2310,6 +2409,65 @@ def trackbar(theWidth, theValue, theMin, theMax, theSegments = 1, theLabelFormat
 	"""
 	print('This is wrapper function to help code autocompletion.')
 
+def trackbar2(theWidth, theValue1, theValue2, theMin, theMax, theSegments=1, theLabelFormat='%.1Lf', theOptions=0, theDiscreteStep=1):
+	"""
+	Display a trackbar for numeric values that the user can increase/decrease
+	by clicking and/or dragging the marker right or left.
+
+	IMPORTANT: this function can only be used within a `begin*()/end*()` block, otherwise it does nothing.
+
+	This component uses templates so it is imperative that you make it very explicit
+	the type of `theValue`, `theMin`, `theMax` and `theStep`, otherwise you might end up with
+	weird compilation errors.
+
+	Example:
+
+	```
+	# using float
+	trackbar(width, &floatValue1, &floatValue2, 0.0, 50.0)
+
+	# using float
+	trackbar(width, &floatValue1, &floatValue2, 0.0f, 50.0f)
+
+	# using char
+	trackbar(width, &charValue1, &charValue2, (char)1, (char)10)
+	```
+
+	Parameters
+	----------
+	theWidth: int
+		the width of the trackbar.
+	theValue1: [number]
+		array or list of numbers whose first position, i.e. theValue[0], will be used to store the current value of the trackbar. It will be modified when the user interacts with the trackbar. Any numeric type can be used, e.g. int, float, long double, etc.
+	theValue2: [number]
+		array or list of numbers whose first position, i.e. theValue[0], will be used to store the current value of the trackbar. It will be modified when the user interacts with the trackbar. Any numeric type can be used, e.g. int, float, long double, etc.
+	theMin: number
+		minimum value allowed for the trackbar.
+	theMax: number
+		maximum value allowed for the trackbar.
+	theSegments: int
+		number of segments the trackbar will have (default is 1). Segments can be seen as groups of numbers in the scale of the trackbar. For example, 1 segment means a single groups of values (no extra labels along the scale), 2 segments mean the trackbar values will be divided in two groups and a label will be placed at the middle of the scale.
+	theLabelFormat: str
+		formating string that will be used to render the labels, e.g. `%.2Lf`. No matter the type of the `theValue` param, internally trackbar stores it as a `long float`, so the formating string will *always* receive a `long float` value to format. If you are using a trackbar with integers values, for instance, you can supress decimals using a formating string as `%.0Lf` to format your labels.
+	theOptions: uint
+		options to customize the behavior/appearance of the trackbar, expressed as a bitset. Available options are defined as `TRACKBAR_` constants and they can be combined using the bitwise `|` operand. Available options are: `TRACKBAR_HIDE_SEGMENT_LABELS` (do not render segment labels, but do render min/max labels), `TRACKBAR_HIDE_STEP_SCALE` (do not render the small lines indicating values in the scale), `TRACKBAR_DISCRETE` (changes of the trackbar value are multiples of informed step param), `TRACKBAR_HIDE_MIN_MAX_LABELS` (do not render min/max labels), `TRACKBAR_HIDE_VALUE_LABEL` (do not render the current value of the trackbar below the moving marker), `TRACKBAR_HIDE_LABELS` (do not render labels at all).
+	theDiscreteStep: number
+		amount that the trackbar marker will increase/decrease when the marker is dragged right/left (if option TRACKBAR_DISCRETE is ON)
+
+	Returns
+	----------
+	`true` when the value of the trackbar changed.
+
+	See Also
+	----------
+	counter()
+	beginColumn()
+	beginRow()
+	endRow()
+	endColumn()
+	"""
+	print('This is wrapper function to help code autocompletion.')
+
 def window(theWidth, theHeight, theTitle):
 	"""
 	Display a window (a block with a title and a body) within a `begin*()` and `end*()` block.
@@ -2671,6 +2829,48 @@ def trackbar(*theArgs):
 	# TODO: adjust aLabelFormat based on type of aValue
 	aParams = TrackbarParams(aMin, aMax, aDiscreteStep, aSegments, aLabelFormat, aOptions)
 	aResult = __internal.trackbar(aBlock, aX, aY, aWidth, aValue, aParams)
+
+	return aResult
+
+def trackbar2(*theArgs):
+	# TODO: re-factor this two similar blocks by slicing theArgs into aArgs
+	if isinstance(theArgs[0], np.ndarray):
+		# Signature: trackbar(theWhere, theX, theY, theWidth, theValue1, theValue2, theMin, theMax, theSegments = 1, theLabelFormat = "%.1Lf", theOptions = 0, theDiscreteStep = 1)
+		aWhere = theArgs[0]
+		aX = theArgs[1]
+		aY = theArgs[2]
+		aWidth = theArgs[3]
+		aValue1 = theArgs[4]
+		aValue2 = theArgs[5]
+		aMin = theArgs[6]
+		aMax = theArgs[7]
+		aSegments = theArgs[8] if len(theArgs) >= 9 else 1
+		aLabelFormat = theArgs[9] if len(theArgs) >= 10 else '%.1Lf'
+		aOptions = theArgs[10] if len(theArgs) >= 11 else 0
+		aDiscreteStep = theArgs[11] if len(theArgs) >= 12 else 1
+
+		__internal.screen.where = aWhere
+		aBlock = __internal.screen
+	else:
+		# Signature: trackbar(theWidth, theValue1, theValue2, theMin, theMax, theSegments = 1, theLabelFormat = "%.1Lf", theOptions = 0, theDiscreteStep = 1)
+		aBlock = __internal.topBlock()
+		aX = aBlock.anchor.x
+		aY = aBlock.anchor.y
+		aWidth = theArgs[0]
+		aValue1 = theArgs[1]
+		aValue2 = theArgs[2]
+		aMin = theArgs[3]
+		aMax = theArgs[4]
+		aSegments = theArgs[5] if len(theArgs) >= 6 else 1
+		aLabelFormat = theArgs[6] if len(theArgs) >= 7 else '%.1Lf'
+		aOptions = theArgs[7] if len(theArgs) >= 8 else 0
+		aDiscreteStep = theArgs[8] if len(theArgs) >= 9 else 1
+
+	# TODO: adjust aLabelFormat based on type of aValue
+	aParams = TrackbarParams(aMin, aMax, aDiscreteStep, aSegments,
+							 aLabelFormat, aOptions)
+	aResult = __internal.trackbar2(aBlock, aX, aY, aWidth, aValue1, aValue2,
+								   aParams)
 
 	return aResult
 

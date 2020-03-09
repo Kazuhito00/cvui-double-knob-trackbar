@@ -4,6 +4,9 @@
 *.o
 *.obj
 
+# bat
+*.bat
+
 # Precompiled Headers
 *.gch
 *.pch
