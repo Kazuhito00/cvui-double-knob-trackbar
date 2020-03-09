@@ -31,6 +31,8 @@ cvui License
 -----
 The original part of cvui is distributed under the MIT license.
 
+I pay tribute to his wonderful work.
+
 Copyright (c) 2016 Fernando Bevilacqua. Licensed under the [MIT license](LICENSE.md).
 
 Change log
