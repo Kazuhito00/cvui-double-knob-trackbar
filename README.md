@@ -1,5 +1,5 @@
-# cvui-two-knob-trackbar
-cvui-two-knob-trackbarはcvuiをベースとして、上限下限の2つの値を指定可能なトラックバーをお試しで実装したものです。
+# cvui-py-two-knob-trackbar
+cvui-py-two-knob-trackbarはPython版のcvuiをベースとして、上限下限の2つの値を指定可能なトラックバーをお試しで実装したものです。
 
 cvui-two-knob-trackbar is a experimental implementation of a trackbar based on cvui that allows you to specify two values, upper and lower limits.
 
